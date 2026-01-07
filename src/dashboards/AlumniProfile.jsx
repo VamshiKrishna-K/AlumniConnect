@@ -1,0 +1,178 @@
+import { useEffect, useState } from "react";
+import { auth, db } from "../firebase/firebaseConfig";
+import { doc, getDoc, setDoc } from "firebase/firestore";
+
+export default function AlumniProfile() {
+  const uid = auth.currentUser?.uid;
+
+  const [profile, setProfile] = useState({
+    company: "",
+    designation: "",
+    profileImage: "",
+  });
+
+  const [imageFile, setImageFile] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [message, setMessage] = useState("");
+
+  // 🔹 Load existing profile
+  useEffect(() => {
+    const loadProfile = async () => {
+      if (!uid) return;
+
+      const snap = await getDoc(doc(db, "alumni_profiles", uid));
+      if (snap.exists()) {
+        setProfile(snap.data());
+      }
+      setLoading(false);
+    };
+
+    loadProfile();
+  }, [uid]);
+
+  // 🔹 Upload image to Cloudinary
+  const uploadToCloudinary = async (file) => {
+    const data = new FormData();
+    data.append("file", file);
+    data.append(
+      "upload_preset",
+      import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+    );
+
+    const url = `https://api.cloudinary.com/v1_1/${
+      import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
+    }/image/upload`;
+
+    const res = await fetch(url, {
+      method: "POST",
+      body: data,
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      console.error(result);
+      throw new Error("Upload failed");
+    }
+
+    return result.secure_url;
+  };
+
+  // 🔹 Save profile
+  const saveProfile = async (e) => {
+    e.preventDefault();
+    setMessage("Saving...");
+
+    try {
+      let imageUrl = profile.profileImage;
+
+      if (imageFile) {
+        imageUrl = await uploadToCloudinary(imageFile);
+      }
+
+      await setDoc(doc(db, "alumni_profiles", uid), {
+        ...profile,
+        profileImage: imageUrl,
+      });
+
+      setMessage("Profile updated successfully ✅");
+    } catch (err) {
+      console.error(err);
+      setMessage("Update failed ❌");
+    }
+  };
+
+  if (loading) return <p className="text-center mt-5">Loading...</p>;
+
+  return (
+    <div className="container mt-5">
+      <div className="row justify-content-center">
+        <div className="col-md-6">
+
+          <div className="card shadow-sm">
+            <div className="card-body p-4">
+
+              {/* ===== PROFILE IMAGE ===== */}
+              <div className="text-center mb-4">
+                <img
+                  src={
+                    profile.profileImage ||
+                    "https://via.placeholder.com/160?text=Profile"
+                  }
+                  alt="Profile"
+                  className="rounded-circle shadow"
+                  style={{
+                    width: "160px",
+                    height: "160px",
+                    objectFit: "cover",
+                    border: "4px solid #0d6efd",
+                  }}
+                />
+
+                <div className="mt-3">
+                  <label className="btn btn-outline-primary btn-sm">
+                    Change Profile Photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      hidden
+                      onChange={(e) =>
+                        setImageFile(e.target.files[0])
+                      }
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <h4 className="fw-bold text-center mb-3">
+                Alumni Profile
+              </h4>
+
+              {message && (
+                <div className="alert alert-info text-center">
+                  {message}
+                </div>
+              )}
+
+              <form onSubmit={saveProfile}>
+                <div className="mb-3">
+                  <label className="form-label">Company</label>
+                  <input
+                    className="form-control"
+                    value={profile.company}
+                    onChange={(e) =>
+                      setProfile({
+                        ...profile,
+                        company: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="form-label">Designation</label>
+                  <input
+                    className="form-control"
+                    value={profile.designation}
+                    onChange={(e) =>
+                      setProfile({
+                        ...profile,
+                        designation: e.target.value,
+                      })
+                    }
+                  />
+                </div>
+
+                <button className="btn btn-primary w-100">
+                  Save Profile
+                </button>
+              </form>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  );
+}
