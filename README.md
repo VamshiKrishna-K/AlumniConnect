@@ -1,6 +1,8 @@
 AlumniConnect
 AlumniConnect is a role-based web application designed to connect students with verified alumni from their own educational institution for career guidance and job referral requests. The platform ensures trust and authenticity through college-controlled alumni verification.
+
 click here:
+
 [![AlumniConnect](https://img.shields.io/badge/AlumniConnect-green?style=for-the-badge)](https://vamshikrishna-k.github.io/AlumniConnect/)
 
 <img width="1894" height="913" alt="{3913C6BE-4D7E-418E-ACE5-F9F789414CEE}" src="https://github.com/user-attachments/assets/bf045214-01ae-405c-9b3d-c70f30f9d231" />
